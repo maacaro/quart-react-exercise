@@ -5,6 +5,7 @@ Build a complete Task Management API using **Test-Driven Development (TDD)** wit
 ## Learning Objectives
 
 By completing this assignment, you will:
+
 - ✅ Practice Test-Driven Development (TDD) workflow
 - ✅ Build async API endpoints with Quart
 - ✅ Create React components with TypeScript
@@ -23,18 +24,20 @@ You'll build a **Task Management API** with the following features:
 ### Features to Implement
 
 **Task Entity**:
+
 ```typescript
 interface Task {
   id: number;
   title: string;
   description: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: "pending" | "in_progress" | "completed";
   created_at: string;
   updated_at: string;
 }
 ```
 
 **API Endpoints**:
+
 - `POST /api/tasks` - Create a new task
 - `GET /api/tasks` - List all tasks
 - `GET /api/tasks/<id>` - Get single task
@@ -42,6 +45,7 @@ interface Task {
 - `DELETE /api/tasks/<id>` - Delete task
 
 **Frontend Features**:
+
 - View list of tasks
 - Create new task with form
 - Update task status
@@ -113,12 +117,12 @@ cat tests/unit/conftest.py
 
 **Key Files to Study**:
 
-| File | Purpose | What to Learn |
-|------|---------|---------------|
-| `app/backend/app.py` | Main application factory | Blueprint registration pattern |
-| `app/backend/config.py` | Configuration constants | How to define config keys |
-| `tests/unit/conftest.py` | Test fixtures | How to set up test database |
-| `tests/e2e/conftest.py` | Playwright fixtures | How to configure E2E tests |
+| File                     | Purpose                  | What to Learn                  |
+| ------------------------ | ------------------------ | ------------------------------ |
+| `app/backend/app.py`     | Main application factory | Blueprint registration pattern |
+| `app/backend/config.py`  | Configuration constants  | How to define config keys      |
+| `tests/unit/conftest.py` | Test fixtures            | How to set up test database    |
+| `tests/e2e/conftest.py`  | Playwright fixtures      | How to configure E2E tests     |
 
 ### Step 4: Run Existing Tests
 
@@ -145,6 +149,7 @@ graph LR
 ```
 
 **Rules**:
+
 1. **Write the test first** - Always start with a failing test
 2. **Write minimum code** - Only write enough to make the test pass
 3. **Run tests frequently** - After every small change
@@ -191,6 +196,11 @@ async def test_create_task_success(test_client):
         "updated_at": "2024-01-01T12:00:00"
     }
     """
+    # TODO: Mock the database for this test
+    # from unittest.mock import patch, AsyncMock
+    # with patch('app.backend.tasks.models.insert_task', new_callable=AsyncMock) as mock_insert:
+    #     mock_insert.return_value = {...}  # mock database response
+
     # TODO: Implement this test
     # Hint: Use test_client.post() with json parameter
 
@@ -228,6 +238,10 @@ async def test_create_task_missing_title(test_client):
         "field": "title"
     }
     """
+    # TODO: Mock the database for this test
+    # Note: For validation tests, database might not be called,
+    # but good practice to mock it anyway
+
     # TODO: Implement this test
 
     task_data = {
@@ -314,17 +328,12 @@ async def test_create_task_default_status(test_client):
 ```
 
 **Now run the tests - they should FAIL**:
+
 ```bash
 pytest tests/unit/test_tasks.py -v
 
 # Expected output:
 # 4 failed (because endpoints don't exist yet)
-```
-
-**Commit your tests**:
-```bash
-git add tests/unit/test_tasks.py
-git commit -m "test: add unit tests for POST /api/tasks endpoint"
 ```
 
 ---
@@ -639,6 +648,7 @@ async def create_task(task: Task) -> Task:
 ```
 
 **Run the tests - they should PASS**:
+
 ```bash
 pytest tests/unit/test_tasks.py -v
 
@@ -647,6 +657,7 @@ pytest tests/unit/test_tasks.py -v
 ```
 
 **Commit your implementation**:
+
 ```bash
 git add app/backend/tasks/
 git add app/backend/core/database.py
@@ -661,6 +672,7 @@ git commit -m "feat: implement POST /api/tasks endpoint with validation"
 Follow the same TDD pattern for the remaining endpoints:
 
 **Endpoints to Implement**:
+
 1. `GET /api/tasks` - List all tasks
 2. `GET /api/tasks/<id>` - Get single task
 3. `PUT /api/tasks/<id>` - Update task
@@ -669,6 +681,7 @@ Follow the same TDD pattern for the remaining endpoints:
 **For Each Endpoint**:
 
 1. **Write tests first** in `tests/unit/test_tasks.py`:
+
    ```python
    @pytest.mark.asyncio
    @pytest.mark.unit
@@ -688,11 +701,13 @@ Follow the same TDD pattern for the remaining endpoints:
    ```
 
 2. **Run tests and watch them fail**:
+
    ```bash
    pytest tests/unit/test_tasks.py::test_get_all_tasks -v
    ```
 
 3. **Implement the endpoint** in `app/backend/tasks/routes.py`:
+
    ```python
    @tasks_bp.route("/api/tasks", methods=["GET"])
    async def get_tasks():
@@ -702,11 +717,13 @@ Follow the same TDD pattern for the remaining endpoints:
    ```
 
 4. **Run tests and watch them pass**:
+
    ```bash
    pytest tests/unit/test_tasks.py::test_get_all_tasks -v
    ```
 
 5. **Commit**:
+
    ```bash
    git add tests/unit/test_tasks.py
    git commit -m "test: add tests for GET /api/tasks"
@@ -716,6 +733,7 @@ Follow the same TDD pattern for the remaining endpoints:
    ```
 
 **Testing Checklist**:
+
 - ✅ Test success cases
 - ✅ Test validation errors
 - ✅ Test not found errors (404)
@@ -730,6 +748,7 @@ In this phase, you'll build the React frontend using **E2E Test-Driven Developme
 ### Why E2E Tests for Frontend?
 
 E2E tests verify:
+
 - UI elements are rendered correctly
 - User interactions work as expected
 - API integration is correct
@@ -764,6 +783,16 @@ def test_view_tasks_page(page: Page):
     3. Verify task list container exists
     4. Verify at least one task is displayed (from seed data)
     """
+    # TODO: Mock the API endpoint for this test
+    # page.route("**/api/tasks", lambda route: route.fulfill(
+    #     status=200,
+    #     content_type="application/json",
+    #     body=json.dumps([
+    #         {"id": 1, "title": "Task 1", "description": "Desc 1", "status": "pending", ...},
+    #         {"id": 2, "title": "Task 2", "description": "Desc 2", "status": "in_progress", ...}
+    #     ])
+    # ))
+
     # TODO: Implement this test
 
     # Navigate to tasks page
@@ -772,7 +801,7 @@ def test_view_tasks_page(page: Page):
     # TODO: Add assertions
     # expect(page.locator("h1")).to_contain_text("Tasks")
     # expect(page.locator('[data-testid="task-list"]')).to_be_visible()
-    # expect(page.locator('[data-testid="task-card"]')).to_have_count(3)  # Seed data
+    # expect(page.locator('[data-testid="task-card"]')).to_have_count(2)  # Based on mocked data
 
     pass  # Remove when implemented
 
@@ -794,6 +823,24 @@ def test_create_task_flow(page: Page):
     8. Verify new task appears in the list
     9. Verify task has correct title and description
     """
+    # TODO: Mock the API endpoints for this test
+    # Mock GET /api/tasks (initial load)
+    # page.route("**/api/tasks", lambda route: route.fulfill(
+    #     status=200,
+    #     content_type="application/json",
+    #     body=json.dumps([])
+    # ), times=1)
+    #
+    # Mock POST /api/tasks (create new task)
+    # page.route("**/api/tasks", lambda route: route.fulfill(
+    #     status=201,
+    #     content_type="application/json",
+    #     body=json.dumps({
+    #         "id": 1, "title": "Test Task", "description": "Test Description",
+    #         "status": "pending", "created_at": "2024-01-01T12:00:00", ...
+    #     })
+    # ), method="POST")
+
     # TODO: Implement this test
 
     page.goto("http://localhost:5173/tasks")
@@ -830,6 +877,15 @@ def test_create_task_validation(page: Page):
     5. Verify error message appears
     6. Verify task is NOT created
     """
+    # TODO: Mock the API endpoint for this test
+    # page.route("**/api/tasks", lambda route: route.fulfill(
+    #     status=200,
+    #     content_type="application/json",
+    #     body=json.dumps([])
+    # ))
+    # Note: For client-side validation, API might not be called,
+    # but good practice to mock it anyway
+
     # TODO: Implement this test
 
     page.goto("http://localhost:5173/tasks")
@@ -860,6 +916,25 @@ def test_update_task_status(page: Page):
     4. Click "Save"
     5. Verify status is updated in the UI
     """
+    # TODO: Mock the API endpoints for this test
+    # Mock GET /api/tasks (initial load with pending task)
+    # page.route("**/api/tasks", lambda route: route.fulfill(
+    #     status=200,
+    #     content_type="application/json",
+    #     body=json.dumps([
+    #         {"id": 1, "title": "Task 1", "status": "pending", ...}
+    #     ])
+    # ))
+    #
+    # Mock PUT /api/tasks/1 (update task status)
+    # page.route("**/api/tasks/1", lambda route: route.fulfill(
+    #     status=200,
+    #     content_type="application/json",
+    #     body=json.dumps(
+    #         {"id": 1, "title": "Task 1", "status": "in_progress", ...}
+    #     )
+    # ), method="PUT")
+
     # TODO: Implement this test
     pass
 
@@ -877,11 +952,27 @@ def test_delete_task(page: Page):
     4. Confirm deletion in dialog
     5. Verify task is removed from list
     """
+    # TODO: Mock the API endpoints for this test
+    # Mock GET /api/tasks (initial load)
+    # page.route("**/api/tasks", lambda route: route.fulfill(
+    #     status=200,
+    #     content_type="application/json",
+    #     body=json.dumps([
+    #         {"id": 1, "title": "Task 1", "status": "completed", ...}
+    #     ])
+    # ))
+    #
+    # Mock DELETE /api/tasks/1
+    # page.route("**/api/tasks/1", lambda route: route.fulfill(
+    #     status=204
+    # ), method="DELETE")
+
     # TODO: Implement this test
     pass
 ```
 
 **Run the tests - they should FAIL** (frontend doesn't exist yet):
+
 ```bash
 # First, start the backend
 cd app/backend
@@ -894,6 +985,7 @@ pytest tests/e2e/test_tasks.py -m e2e -v
 ```
 
 **Commit your tests**:
+
 ```bash
 git add tests/e2e/test_tasks.py
 git commit -m "test: add E2E tests for task management UI"
@@ -914,7 +1006,7 @@ Now implement the frontend to make E2E tests pass.
  * Following TypeScript patterns from the main project.
  */
 
-export type TaskStatus = 'pending' | 'in_progress' | 'completed';
+export type TaskStatus = "pending" | "in_progress" | "completed";
 
 export interface Task {
   id: number;
@@ -946,9 +1038,9 @@ export interface UpdateTaskRequest {
  *
  * Following API client patterns from app/frontend/src/api/ in main project.
  */
-import { Task, CreateTaskRequest, UpdateTaskRequest } from '../types/task';
+import { Task, CreateTaskRequest, UpdateTaskRequest } from "../types/task";
 
-const API_BASE = '/api';
+const API_BASE = "/api";
 
 /**
  * Fetch all tasks.
@@ -959,7 +1051,7 @@ export const getTasks = async (): Promise<Task[]> => {
   // if (!response.ok) throw new Error('Failed to fetch tasks');
   // return response.json();
 
-  throw new Error('Not implemented');
+  throw new Error("Not implemented");
 };
 
 /**
@@ -967,7 +1059,7 @@ export const getTasks = async (): Promise<Task[]> => {
  */
 export const getTask = async (id: number): Promise<Task> => {
   // TODO: Implement
-  throw new Error('Not implemented');
+  throw new Error("Not implemented");
 };
 
 /**
@@ -983,7 +1075,7 @@ export const createTask = async (data: CreateTaskRequest): Promise<Task> => {
   // if (!response.ok) throw new Error('Failed to create task');
   // return response.json();
 
-  throw new Error('Not implemented');
+  throw new Error("Not implemented");
 };
 
 /**
@@ -994,7 +1086,7 @@ export const updateTask = async (
   data: UpdateTaskRequest
 ): Promise<Task> => {
   // TODO: Implement
-  throw new Error('Not implemented');
+  throw new Error("Not implemented");
 };
 
 /**
@@ -1002,7 +1094,7 @@ export const updateTask = async (
  */
 export const deleteTask = async (id: number): Promise<void> => {
   // TODO: Implement
-  throw new Error('Not implemented');
+  throw new Error("Not implemented");
 };
 ```
 
@@ -1014,8 +1106,8 @@ export const deleteTask = async (id: number): Promise<void> => {
  *
  * Following component patterns from app/frontend/src/components/ in main project.
  */
-import React, { useState } from 'react';
-import { CreateTaskRequest, TaskStatus } from '../types/task';
+import React, { useState } from "react";
+import { CreateTaskRequest, TaskStatus } from "../types/task";
 
 interface TaskFormProps {
   onSubmit: (data: CreateTaskRequest) => Promise<void>;
@@ -1026,11 +1118,15 @@ interface TaskFormProps {
 export const TaskForm: React.FC<TaskFormProps> = ({
   onSubmit,
   onCancel,
-  initialData
+  initialData,
 }) => {
-  const [title, setTitle] = useState(initialData?.title || '');
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [status, setStatus] = useState<TaskStatus>(initialData?.status || 'pending');
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [description, setDescription] = useState(
+    initialData?.description || ""
+  );
+  const [status, setStatus] = useState<TaskStatus>(
+    initialData?.status || "pending"
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -1040,7 +1136,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
     // Validation
     if (!title.trim()) {
-      setError('Title is required');
+      setError("Title is required");
       return;
     }
 
@@ -1048,7 +1144,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       setLoading(true);
       await onSubmit({ title, description, status });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save task');
+      setError(err instanceof Error ? err.message : "Failed to save task");
     } finally {
       setLoading(false);
     }
@@ -1081,18 +1177,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       {/* TODO: Add status select dropdown */}
 
       <div className="form-actions">
-        <button
-          type="submit"
-          data-testid="create-task-btn"
-          disabled={loading}
-        >
-          {loading ? 'Saving...' : 'Create Task'}
+        <button type="submit" data-testid="create-task-btn" disabled={loading}>
+          {loading ? "Saving..." : "Create Task"}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-        >
+        <button type="button" onClick={onCancel} disabled={loading}>
           Cancel
         </button>
       </div>
@@ -1109,10 +1197,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  *
  * Following page component patterns from app/frontend/src/pages/ in main project.
  */
-import React, { useState, useEffect } from 'react';
-import { Task } from '../types/task';
-import { getTasks, createTask, deleteTask } from '../api/tasks';
-import { TaskForm } from '../components/TaskForm';
+import React, { useState, useEffect } from "react";
+import { Task } from "../types/task";
+import { getTasks, createTask, deleteTask } from "../api/tasks";
+import { TaskForm } from "../components/TaskForm";
 
 export const TasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -1131,7 +1219,7 @@ export const TasksPage: React.FC = () => {
       const data = await getTasks();
       setTasks(data);
     } catch (error) {
-      console.error('Failed to load tasks:', error);
+      console.error("Failed to load tasks:", error);
     } finally {
       setLoading(false);
     }
@@ -1141,16 +1229,16 @@ export const TasksPage: React.FC = () => {
     const newTask = await createTask(data);
     setTasks([newTask, ...tasks]);
     setShowForm(false);
-    setSuccessMessage('Task created successfully!');
+    setSuccessMessage("Task created successfully!");
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const handleDeleteTask = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+    if (!confirm("Are you sure you want to delete this task?")) return;
 
     await deleteTask(id);
-    setTasks(tasks.filter(task => task.id !== id));
-    setSuccessMessage('Task deleted successfully!');
+    setTasks(tasks.filter((task) => task.id !== id));
+    setSuccessMessage("Task deleted successfully!");
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
@@ -1167,10 +1255,7 @@ export const TasksPage: React.FC = () => {
         </div>
       )}
 
-      <button
-        data-testid="new-task-btn"
-        onClick={() => setShowForm(true)}
-      >
+      <button data-testid="new-task-btn" onClick={() => setShowForm(true)}>
         New Task
       </button>
 
@@ -1188,7 +1273,7 @@ export const TasksPage: React.FC = () => {
           {tasks.length === 0 ? (
             <p>No tasks yet. Create one to get started!</p>
           ) : (
-            tasks.map(task => (
+            tasks.map((task) => (
               <div key={task.id} data-testid="task-card" className="task-card">
                 {/* TODO: Display task information */}
                 <h3>{task.title}</h3>
@@ -1210,8 +1295,8 @@ export const TasksPage: React.FC = () => {
 **Update Router** in `app/frontend/src/App.tsx`:
 
 ```tsx
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { TasksPage } from './pages/Tasks';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { TasksPage } from "./pages/Tasks";
 
 function App() {
   return (
@@ -1228,6 +1313,7 @@ export default App;
 ```
 
 **Run the application**:
+
 ```bash
 # Terminal 1 - Backend
 cd app/backend
@@ -1241,6 +1327,7 @@ npm run dev
 ```
 
 **Run E2E tests - they should PASS**:
+
 ```bash
 pytest tests/e2e/test_tasks.py -m e2e --headed
 
@@ -1248,6 +1335,7 @@ pytest tests/e2e/test_tasks.py -m e2e --headed
 ```
 
 **Commit your implementation**:
+
 ```bash
 git add app/frontend/
 git commit -m "feat: implement task management UI with React"
@@ -1262,6 +1350,7 @@ git commit -m "feat: implement task management UI with React"
 Before submitting, verify everything works:
 
 #### Backend Tests
+
 ```bash
 # All backend unit tests pass
 pytest tests/unit/ -m unit -v
@@ -1270,6 +1359,7 @@ pytest tests/unit/ -m unit -v
 ```
 
 #### E2E Tests
+
 ```bash
 # Start backend
 cd app/backend
@@ -1282,6 +1372,7 @@ pytest tests/e2e/ -m e2e -v
 ```
 
 #### Manual Testing
+
 ```bash
 # Start both servers
 # Backend: Terminal 1
@@ -1301,6 +1392,7 @@ npm run dev
 ```
 
 #### Code Quality
+
 ```bash
 # Run linter
 cd app/backend
@@ -1314,6 +1406,7 @@ mypy app/backend/
 ```
 
 #### Git History
+
 ```bash
 # View your commits
 git log --oneline
@@ -1353,9 +1446,11 @@ git push origin KQ-001-maria
 
 ```markdown
 ## Description
+
 Implemented Task Management API following TDD methodology.
 
 ## Features Implemented
+
 - ✅ POST /api/tasks - Create task
 - ✅ GET /api/tasks - List tasks
 - ✅ GET /api/tasks/<id> - Get single task
@@ -1366,14 +1461,17 @@ Implemented Task Management API following TDD methodology.
 - ✅ Error handling
 
 ## Testing
+
 - Unit tests: X passing
 - E2E tests: Y passing
 - Code coverage: Z%
 
 ## Screenshots
+
 [Add screenshots of working application]
 
 ## Checklist
+
 - ✅ All tests pass
 - ✅ Code follows project patterns
 - ✅ TDD workflow followed (tests before implementation)
@@ -1387,20 +1485,24 @@ Implemented Task Management API following TDD methodology.
 ## Learning Resources
 
 ### Quart Documentation
+
 - Official docs: https://quart.palletsprojects.com/
 - Blueprints: https://quart.palletsprojects.com/tutorials/blueprint_tutorial.html
 - Testing: https://quart.palletsprojects.com/how_to_guides/testing.html
 
 ### React + TypeScript
+
 - React docs: https://react.dev/
 - TypeScript handbook: https://www.typescriptlang.org/docs/
 
 ### Testing
+
 - pytest: https://docs.pytest.org/
 - pytest-asyncio: https://pytest-asyncio.readthedocs.io/
 - Playwright: https://playwright.dev/python/
 
 ### TDD Principles
+
 - Red-Green-Refactor: https://www.codecademy.com/article/tdd-red-green-refactor
 - Test-Driven Development: https://testdriven.io/test-driven-development/
 
@@ -1409,7 +1511,9 @@ Implemented Task Management API following TDD methodology.
 ## Common Issues & Solutions
 
 ### Issue: Tests fail with "database locked"
+
 **Solution**: Ensure test database is cleaned up between tests
+
 ```python
 # In conftest.py
 @pytest.fixture(autouse=True)
@@ -1419,7 +1523,9 @@ async def cleanup():
 ```
 
 ### Issue: E2E tests can't find elements
+
 **Solution**: Check data-testid attributes match between test and component
+
 ```python
 # Test:
 page.click('[data-testid="new-task-btn"]')
@@ -1429,7 +1535,9 @@ page.click('[data-testid="new-task-btn"]')
 ```
 
 ### Issue: CORS errors in browser console
+
 **Solution**: Ensure CORS is configured in Quart app
+
 ```python
 from quart_cors import cors
 
@@ -1438,7 +1546,9 @@ app = cors(app, allow_origin="http://localhost:5173")
 ```
 
 ### Issue: API returns 404
+
 **Solution**: Check blueprint is registered and routes are correct
+
 ```python
 # In app.py
 from tasks.routes import tasks_bp
@@ -1463,6 +1573,7 @@ After completing this assignment:
 **Congratulations on completing the assignment!** 🎉
 
 You've learned:
+
 - ✅ Test-Driven Development workflow
 - ✅ Quart async web framework
 - ✅ React + TypeScript

@@ -1,0 +1,27 @@
+{
+  "name": "quart-react-exercise",
+  "version": "1.0.0",
+  "description": "A hands-on learning project that teaches modern full-stack development using **Quart** (async Python web framework) and **React** (with Vite), following production-ready patterns and Test-Driven Development (TDD).",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maacaro/quart-react-exercise.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/maacaro/quart-react-exercise/issues"
+  },
+  "homepage": "https://github.com/maacaro/quart-react-exercise#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

@@ -7,7 +7,6 @@ This script creates the SQLite database and tables needed for the application.
 Usage:
     python scripts/init_db.py
 """
-import asyncio
 import os
 import sys
 from pathlib import Path
@@ -16,23 +15,23 @@ from pathlib import Path
 backend_path = Path(__file__).parent.parent / "app" / "backend"
 sys.path.insert(0, str(backend_path))
 
-from core.database import init_db, seed_sample_data
+from core.database import init_db, seed_sample_data, get_db_path  # 👈 añadimos get_db_path
 
 
-async def main():
+def main() -> None:
     """Initialize database and optionally seed data."""
     print("🗄️  Initializing database...")
 
     try:
         # Initialize database tables
-        await init_db()
+        init_db()
         print("✅ Database tables created successfully!")
 
         # Ask if user wants to seed sample data
         seed = input("\n📦 Seed sample data? (y/n): ").lower().strip()
 
-        if seed == 'y':
-            await seed_sample_data()
+        if seed == "y":
+            seed_sample_data()
             print("✅ Sample data seeded successfully!")
             print("\nSample tasks created:")
             print("  1. Learn Quart framework (pending)")
@@ -40,7 +39,7 @@ async def main():
             print("  3. Write unit tests (completed)")
 
         print("\n✨ Database initialization complete!")
-        print(f"📁 Database location: {os.getenv('DATABASE_URL', 'sqlite:///app.db')}")
+        print(f"📁 Database location: {get_db_path()}")
 
     except Exception as e:
         print(f"\n❌ Error initializing database: {e}")
@@ -48,4 +47,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

@@ -4,7 +4,9 @@ Creates and configures the Quart application
 """
 from quart import Quart
 from quart_cors import cors
+from backend.tasks.routes import tasks_bp
 import os
+
 
 # TODO: Import the tasks blueprint
 # from app.backend.tasks.routes import tasks_bp
@@ -25,6 +27,10 @@ def create_app():
 
     # TODO: Register the tasks blueprint
     # Hint: app.register_blueprint(tasks_bp, url_prefix='/api')
+
+        # Register blueprints
+    app.register_blueprint(tasks_bp, url_prefix="/api")
+
 
     @app.route('/api/health')
     async def health_check():

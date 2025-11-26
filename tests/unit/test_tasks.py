@@ -17,44 +17,122 @@ class TestTaskCreation:
     @pytest.mark.asyncio
     async def test_create_task_success(self, client):
         """
-        Test creating a task with valid data
-
-        TODO: Implement this test
-        Steps:
-        1. Make POST request to /api/tasks with valid task data
-        2. Assert response status is 201
-        3. Assert response contains task with correct data
-        4. Assert task has an id, created_at, and updated_at
+        Test successful task creation with valid data.
         """
-        pass
+        # Arrange
+        task_data = {
+            "title": "Test Task",
+            "description": "Test Description",
+            "status": "pending",
+        }
+
+        # Act
+        response = await client.post("/api/tasks", json=task_data)
+
+        # Assert
+        assert response.status_code == 201
+
+        data = await response.get_json()
+        # ID generado
+        assert "id" in data
+        assert isinstance(data["id"], int)
+
+        # Campos iguales a lo enviado
+        assert data["title"] == task_data["title"]
+        assert data["description"] == task_data["description"]
+        assert data["status"] == task_data["status"]
+
+        # Timestamps presentes
+        assert "created_at" in data
+        assert "updated_at" in data
+        assert isinstance(data["created_at"], str)
+        assert isinstance(data["updated_at"], str)
+        assert data["created_at"]
+        assert data["updated_at"]
+
 
     @pytest.mark.asyncio
     async def test_create_task_missing_title(self, client):
         """
-        Test creating a task without a title returns 400
+        Test task creation fails when title is missing.
 
-        TODO: Implement this test
+        Steps:
+        1. Make POST request to /api/tasks without 'title' in JSON body
+        2. Assert response status code is 400
+        3. Assert response JSON contains error message about missing title
         """
-        pass
+        # Arrange: falta title
+        task_data = {
+            "description": "Description without title",
+            "status": "pending",
+        }
 
-    @pytest.mark.asyncio
-    async def test_create_task_missing_description(self, client):
-        """
-        Test creating a task without a description returns 400
+        # Act
+        response = await client.post("/api/tasks", json=task_data)
 
-        TODO: Implement this test
-        """
-        pass
+        # Assert
+        assert response.status_code == 400
+        data = await response.get_json()
+        assert "error" in data
+        # mensaje menciona title
+        assert "title" in data["error"].lower()
+        # opcional: campo específico
+        assert data.get("field") == "title"
+
 
     @pytest.mark.asyncio
     async def test_create_task_invalid_status(self, client):
         """
-        Test creating a task with invalid status returns 400
+        Test that task creation fails when status is invalid.
 
-        TODO: Implement this test
-        Hint: Test with status like 'invalid_status'
+        Valid statuses: pending, in_progress, completed
         """
-        pass
+        # Arrange: status inválido
+        task_data = {
+            "title": "Task with invalid status",
+            "description": "Some description",
+            "status": "invalid_status",
+        }
+
+        # Act
+        response = await client.post("/api/tasks", json=task_data)
+
+        # Assert
+        assert response.status_code == 400
+        data = await response.get_json()
+        assert "error" in data
+        assert "status" in data["error"].lower()
+        assert data.get("field") == "status"
+    
+
+
+    @pytest.mark.asyncio
+    async def test_create_task_missing_description(self, client):
+        """
+        Test that task creation fails when description is missing.
+
+        In this exercise, we require both title and description.
+        """
+        # Arrange: falta description
+        task_data = {
+            "title": "Task without description",
+            "status": "pending",
+        }
+
+        # Act
+        response = await client.post("/api/tasks", json=task_data)
+
+        # Assert
+        assert response.status_code == 400
+        data = await response.get_json()
+        assert "error" in data
+        assert "description" in data["error"].lower()
+        assert data.get("field") == "description"
+
+
+
+
+
 
 
 class TestTaskRetrieval:
@@ -111,6 +189,11 @@ class TestTaskRetrieval:
         pass
 
 
+
+
+
+
+
 class TestTaskUpdate:
     """Tests for updating tasks"""
 
@@ -156,6 +239,11 @@ class TestTaskUpdate:
         TODO: Implement this test
         """
         pass
+
+
+
+
+
 
 
 class TestTaskDeletion:

@@ -3,37 +3,65 @@ Task Routes
 API endpoints for task management
 """
 from quart import Blueprint, request, jsonify
-from app.backend.tasks import models
+from backend import tasks as tasks_pkg  # opcional, pero vamos a usar models
+from backend.tasks import models
+
+VALID_STATUSES = ["pending", "in_progress", "completed"]
 
 # Create the tasks blueprint
 tasks_bp = Blueprint('tasks', __name__)
 
 
-@tasks_bp.route('/tasks', methods=['POST'])
+@tasks_bp.route("/tasks", methods=["POST"])
 async def create_task():
     """
-    Create a new task
-
-    Request body:
-        {
-            "title": "string",
-            "description": "string",
-            "status": "pending|in_progress|completed" (optional, defaults to 'pending')
-        }
-
-    Returns:
-        201: Created task
-        400: Invalid request data
-
-    TODO: Implement this endpoint
-    Hints:
-    - Use await request.get_json() to get request data
-    - Validate that title and description are provided
-    - Validate that status is one of: pending, in_progress, completed
-    - Call models.create_task() with the data
-    - Return the created task with status code 201
+    Create a new task.
     """
-    pass
+    # 1. Obtener JSON
+    data = await request.get_json()
+
+    if not data:
+        return jsonify({"error": "Request body is required"}), 400
+
+    title = data.get("title")
+    description = data.get("description")
+    status = data.get("status", "pending")
+
+    # 2. Validaciones
+    if not title or not str(title).strip():
+        return jsonify({"error": "Title is required", "field": "title"}), 400
+
+    if not description or not str(description).strip():
+        return jsonify(
+            {"error": "Description is required", "field": "description"}
+        ), 400
+
+    if status not in VALID_STATUSES:
+        return (
+            jsonify(
+                {
+                    "error": (
+                        "Invalid status. Must be one of: "
+                        + ", ".join(VALID_STATUSES)
+                    ),
+                    "field": "status",
+                }
+            ),
+            400,
+        )
+
+    # 3. Crear tarea en la DB (modelo síncrono)
+    created_task = models.create_task(
+        {
+            "title": title.strip(),
+            "description": description.strip(),
+            "status": status,
+        }
+    )
+
+    # 4. Devolver JSON con 201
+    return jsonify(created_task), 201
+
 
 
 @tasks_bp.route('/tasks', methods=['GET'])

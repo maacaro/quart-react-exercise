@@ -4,28 +4,42 @@ Database operations for tasks
 """
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from backend.core.database import get_db_connection
 
 
-def create_task(title: str, description: str, status: str = 'pending') -> Dict[str, Any]:
+def create_task(data: dict) -> dict:
     """
-    Create a new task in the database
+    Create a new task in the database.
 
     Args:
-        title: Task title
-        description: Task description
-        status: Task status (default: 'pending')
+        data: Dictionary with task fields (title, description, status)
 
     Returns:
-        dict: Created task with all fields including id and timestamps
-
-    TODO: Implement this function
-    Hints:
-    - Use get_db_connection() from app.backend.core.database
-    - INSERT the task with title, description, status, created_at, updated_at
-    - Return the created task including the auto-generated id
-    - Use datetime.utcnow().isoformat() for timestamps
+        dict: Created task with generated ID and timestamps
     """
-    pass
+    title = data["title"]
+    description = data["description"]
+    status = data.get("status", "pending")
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # Insertar la nueva tarea
+        cursor.execute(
+            """
+            INSERT INTO tasks (title, description, status, created_at, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """,
+            (title, description, status),
+        )
+        task_id = cursor.lastrowid
+
+        # Recuperar la fila recién insertada
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        row = cursor.fetchone()
+
+    # row es un sqlite3.Row → lo convertimos a dict
+    return dict(row)
+
 
 
 def get_all_tasks() -> List[Dict[str, Any]]:

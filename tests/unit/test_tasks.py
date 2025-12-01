@@ -135,6 +135,193 @@ class TestTaskCreation:
 
 
 
+
+
+import pytest
+
+class TestTaskReadUpdateDelete:
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_returns_created_tasks(self, client):
+        """GET /api/tasks debe devolver las tareas creadas."""
+        # Arrange: crear 2 tareas
+        task_1 = {
+            "title": "Task 1",
+            "description": "Description 1",
+            "status": "pending",
+        }
+        task_2 = {
+            "title": "Task 2",
+            "description": "Description 2",
+            "status": "completed",
+        }
+
+        resp1 = await client.post("/api/tasks", json=task_1)
+        assert resp1.status_code == 201
+        resp2 = await client.post("/api/tasks", json=task_2)
+        assert resp2.status_code == 201
+
+        # Act
+        resp = await client.get("/api/tasks")
+
+        # Assert
+        assert resp.status_code == 200
+        data = await resp.get_json()
+        assert isinstance(data, list)
+
+        # No asumimos que SOLO haya estas 2, pero sí que estén
+        titles = {t["title"] for t in data}
+        assert "Task 1" in titles
+        assert "Task 2" in titles
+
+    @pytest.mark.asyncio
+    async def test_get_task_by_id_returns_task(self, client):
+        """GET /api/tasks/<id> debe devolver la tarea correcta."""
+        # Arrange: crear una tarea
+        task = {
+            "title": "Single Task",
+            "description": "Some description",
+            "status": "in_progress",
+        }
+
+        resp_create = await client.post("/api/tasks", json=task)
+        assert resp_create.status_code == 201
+        created = await resp_create.get_json()
+        task_id = created["id"]
+
+        # Act
+        resp = await client.get(f"/api/tasks/{task_id}")
+
+        # Assert
+        assert resp.status_code == 200
+        data = await resp.get_json()
+        assert data["id"] == task_id
+        assert data["title"] == task["title"]
+        assert data["description"] == task["description"]
+        assert data["status"] == task["status"]
+
+    @pytest.mark.asyncio
+    async def test_get_task_by_id_not_found(self, client):
+        """GET /api/tasks/<id> debe devolver 404 si no existe."""
+        resp = await client.get("/api/tasks/999999")
+        assert resp.status_code == 404
+        data = await resp.get_json()
+        assert "error" in data
+        assert "not found" in data["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_task_success(self, client):
+        """PUT /api/tasks/<id> debe actualizar la tarea."""
+        # Arrange: crear una tarea
+        task = {
+            "title": "Old title",
+            "description": "Old description",
+            "status": "pending",
+        }
+        resp_create = await client.post("/api/tasks", json=task)
+        assert resp_create.status_code == 201
+        created = await resp_create.get_json()
+        task_id = created["id"]
+        original_updated_at = created["updated_at"]
+
+        # Act: actualizar
+        update_data = {
+            "title": "New title",
+            "description": "New description",
+            "status": "completed",
+        }
+        resp_update = await client.put(
+            f"/api/tasks/{task_id}", json=update_data
+        )
+
+        # Assert
+        assert resp_update.status_code == 200
+        updated = await resp_update.get_json()
+        assert updated["id"] == task_id
+        assert updated["title"] == update_data["title"]
+        assert updated["description"] == update_data["description"]
+        assert updated["status"] == update_data["status"]
+        assert updated["updated_at"] != original_updated_at
+
+    @pytest.mark.asyncio
+    async def test_update_task_invalid_status_returns_400(self, client):
+        """PUT /api/tasks/<id> debe validar el status."""
+        # Arrange: crear tarea válida
+        task = {
+            "title": "Task with bad update",
+            "description": "Desc",
+            "status": "pending",
+        }
+        resp_create = await client.post("/api/tasks", json=task)
+        assert resp_create.status_code == 201
+        created = await resp_create.get_json()
+        task_id = created["id"]
+
+        # Act: intentar actualizar con status inválido
+        resp_update = await client.put(
+            f"/api/tasks/{task_id}",
+            json={"status": "not_a_valid_status"},
+        )
+
+        # Assert
+        assert resp_update.status_code == 400
+        data = await resp_update.get_json()
+        assert "error" in data
+        assert "invalid status" in data["error"].lower()
+        assert data.get("field") == "status"
+
+    @pytest.mark.asyncio
+    async def test_update_task_not_found_returns_404(self, client):
+        """PUT /api/tasks/<id> debe devolver 404 si no existe la tarea."""
+        resp_update = await client.put(
+            "/api/tasks/999999",
+            json={"title": "Does not matter"},
+        )
+
+        assert resp_update.status_code == 404
+        data = await resp_update.get_json()
+        assert "error" in data
+        assert "not found" in data["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_delete_task_success(self, client):
+        """DELETE /api/tasks/<id> debe borrar la tarea."""
+        # Arrange: crear tarea
+        task = {
+            "title": "To be deleted",
+            "description": "Delete me",
+            "status": "pending",
+        }
+        resp_create = await client.post("/api/tasks", json=task)
+        assert resp_create.status_code == 201
+        created = await resp_create.get_json()
+        task_id = created["id"]
+
+        # Act: borrar
+        resp_delete = await client.delete(f"/api/tasks/{task_id}")
+
+        # Assert
+        assert resp_delete.status_code == 204
+
+        # Y comprobar que ya no existe
+        resp_get = await client.get(f"/api/tasks/{task_id}")
+        assert resp_get.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_delete_task_not_found_returns_404(self, client):
+        """DELETE /api/tasks/<id> debe devolver 404 si no existe."""
+        resp_delete = await client.delete("/api/tasks/999999")
+        assert resp_delete.status_code == 404
+        data = await resp_delete.get_json()
+        assert "error" in data
+        assert "not found" in data["error"].lower()
+
+
+
+
+
+
+
+
 class TestTaskRetrieval:
     """Tests for retrieving tasks"""
 
@@ -271,6 +458,11 @@ class TestTaskDeletion:
         TODO: Implement this test
         """
         pass
+
+
+
+
+
 
 
 # BONUS: Integration tests

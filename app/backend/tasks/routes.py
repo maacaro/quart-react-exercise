@@ -3,13 +3,12 @@ Task Routes
 API endpoints for task management
 """
 from quart import Blueprint, request, jsonify
-from backend import tasks as tasks_pkg  # opcional, pero vamos a usar models
 from backend.tasks import models
 
 VALID_STATUSES = ["pending", "in_progress", "completed"]
 
 # Create the tasks blueprint
-tasks_bp = Blueprint('tasks', __name__)
+tasks_bp = Blueprint("tasks", __name__)
 
 
 @tasks_bp.route("/tasks", methods=["POST"])
@@ -17,7 +16,6 @@ async def create_task():
     """
     Create a new task.
     """
-    # 1. Obtener JSON
     data = await request.get_json()
 
     if not data:
@@ -27,14 +25,17 @@ async def create_task():
     description = data.get("description")
     status = data.get("status", "pending")
 
-    # 2. Validaciones
+    # Validaciones
     if not title or not str(title).strip():
         return jsonify({"error": "Title is required", "field": "title"}), 400
 
     if not description or not str(description).strip():
-        return jsonify(
-            {"error": "Description is required", "field": "description"}
-        ), 400
+        return (
+            jsonify(
+                {"error": "Description is required", "field": "description"}
+            ),
+            400,
+        )
 
     if status not in VALID_STATUSES:
         return (
@@ -50,7 +51,6 @@ async def create_task():
             400,
         )
 
-    # 3. Crear tarea en la DB (modelo síncrono)
     created_task = models.create_task(
         {
             "title": title.strip(),
@@ -59,55 +59,41 @@ async def create_task():
         }
     )
 
-    # 4. Devolver JSON con 201
     return jsonify(created_task), 201
 
 
-
-@tasks_bp.route('/tasks', methods=['GET'])
+@tasks_bp.route("/tasks", methods=["GET"])
 async def get_all_tasks():
     """
-    Get all tasks
+    Get all tasks.
 
     Returns:
-        200: List of all tasks
-
-    TODO: Implement this endpoint
-    Hints:
-    - Call models.get_all_tasks()
-    - Return the list of tasks with status code 200
+        200: List of all tasks.
     """
-    pass
+    tasks = models.get_all_tasks()
+    return jsonify(tasks), 200
 
 
-@tasks_bp.route('/tasks/<int:task_id>', methods=['GET'])
+@tasks_bp.route("/tasks/<int:task_id>", methods=["GET"])
 async def get_task(task_id: int):
     """
-    Get a single task by ID
-
-    Args:
-        task_id: Task ID from URL path
+    Get a single task by ID.
 
     Returns:
         200: Task data
         404: Task not found
-
-    TODO: Implement this endpoint
-    Hints:
-    - Call models.get_task_by_id(task_id)
-    - If task is None, return {'error': 'Task not found'} with status 404
-    - Otherwise return the task with status 200
     """
-    pass
+    task = models.get_task_by_id(task_id)
+    if task is None:
+        return jsonify({"error": "Task not found"}), 404
+
+    return jsonify(task), 200
 
 
-@tasks_bp.route('/tasks/<int:task_id>', methods=['PUT'])
+@tasks_bp.route("/tasks/<int:task_id>", methods=["PUT"])
 async def update_task(task_id: int):
     """
-    Update an existing task
-
-    Args:
-        task_id: Task ID from URL path
+    Update an existing task.
 
     Request body (all fields optional):
         {
@@ -115,40 +101,61 @@ async def update_task(task_id: int):
             "description": "string",
             "status": "pending|in_progress|completed"
         }
-
-    Returns:
-        200: Updated task
-        400: Invalid request data
-        404: Task not found
-
-    TODO: Implement this endpoint
-    Hints:
-    - Use await request.get_json() to get request data
-    - Validate status if provided (must be pending, in_progress, or completed)
-    - Call models.update_task() with task_id and provided fields
-    - If result is None, return {'error': 'Task not found'} with status 404
-    - Otherwise return the updated task with status 200
     """
-    pass
+    data = await request.get_json() or {}
+
+    title = data.get("title")
+    description = data.get("description")
+    status = data.get("status")
+
+    # Validar status solo si viene en el body
+    if status is not None and status not in VALID_STATUSES:
+        return (
+            jsonify(
+                {
+                    "error": (
+                        "Invalid status. Must be one of: "
+                        + ", ".join(VALID_STATUSES)
+                    ),
+                    "field": "status",
+                }
+            ),
+            400,
+        )
+
+    # (Opcional) Si no se manda nada, podemos rechazar
+    if title is None and description is None and status is None:
+        return (
+            jsonify({"error": "No fields to update"}),
+            400,
+        )
+
+    updated = models.update_task(
+        task_id,
+        title=title,
+        description=description,
+        status=status,
+    )
+
+    if updated is None:
+        return jsonify({"error": "Task not found"}), 404
+
+    return jsonify(updated), 200
 
 
-@tasks_bp.route('/tasks/<int:task_id>', methods=['DELETE'])
+@tasks_bp.route("/tasks/<int:task_id>", methods=["DELETE"])
 async def delete_task(task_id: int):
     """
-    Delete a task
-
-    Args:
-        task_id: Task ID from URL path
+    Delete a task.
 
     Returns:
         204: Task deleted successfully
         404: Task not found
-
-    TODO: Implement this endpoint
-    Hints:
-    - Call models.delete_task(task_id)
-    - If result is False, return {'error': 'Task not found'} with status 404
-    - If result is True, return empty response with status 204
-    - For 204, use: return '', 204
     """
-    pass
+    deleted = models.delete_task(task_id)
+
+    if not deleted:
+        return jsonify({"error": "Task not found"}), 404
+
+    # Respuesta vacía con 204
+    return "", 204

@@ -23,7 +23,7 @@ def create_task(data: dict) -> dict:
 
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        # Insertar la nueva tarea
+        # Insert new task
         cursor.execute(
             """
             INSERT INTO tasks (title, description, status, created_at, updated_at)
@@ -33,55 +33,57 @@ def create_task(data: dict) -> dict:
         )
         task_id = cursor.lastrowid
 
-        # Recuperar la fila recién insertada
+        # Fetch inserted row
         cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
         row = cursor.fetchone()
 
-    # row es un sqlite3.Row → lo convertimos a dict
     return dict(row)
-
 
 
 def get_all_tasks() -> List[Dict[str, Any]]:
     """
-    Retrieve all tasks from the database
+    Retrieve all tasks from the database.
 
     Returns:
-        list: List of all tasks as dictionaries
-
-    TODO: Implement this function
-    Hints:
-    - Use get_db_connection() from app.backend.core.database
-    - SELECT all tasks and convert rows to dictionaries
-    - Return empty list if no tasks exist
+        list: List of all tasks as dictionaries.
     """
-    pass
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM tasks ORDER BY id")
+        rows = cursor.fetchall()
+
+    return [dict(row) for row in rows]
 
 
 def get_task_by_id(task_id: int) -> Optional[Dict[str, Any]]:
     """
-    Retrieve a single task by ID
+    Retrieve a single task by ID.
 
     Args:
-        task_id: The task ID to retrieve
+        task_id: The task ID to retrieve.
 
     Returns:
-        dict or None: Task dictionary if found, None otherwise
-
-    TODO: Implement this function
-    Hints:
-    - Use get_db_connection() from app.backend.core.database
-    - SELECT the task WHERE id = task_id
-    - Return None if task doesn't exist
+        dict or None: Task dictionary if found, None otherwise.
     """
-    pass
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        row = cursor.fetchone()
+
+    if row is None:
+        return None
+
+    return dict(row)
 
 
-def update_task(task_id: int, title: Optional[str] = None,
-                description: Optional[str] = None,
-                status: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def update_task(
+    task_id: int,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    status: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
     """
-    Update an existing task
+    Update an existing task.
 
     Args:
         task_id: The task ID to update
@@ -91,32 +93,64 @@ def update_task(task_id: int, title: Optional[str] = None,
 
     Returns:
         dict or None: Updated task if found, None otherwise
-
-    TODO: Implement this function
-    Hints:
-    - First check if task exists using get_task_by_id()
-    - Build UPDATE query dynamically based on which fields are provided
-    - Always update the updated_at timestamp
-    - Return the updated task
     """
-    pass
+    # Primero verificamos si la tarea existe
+    existing = get_task_by_id(task_id)
+    if existing is None:
+        return None
+
+    fields: list[str] = []
+    params: list[Any] = []
+
+    if title is not None:
+        fields.append("title = ?")
+        params.append(title)
+
+    if description is not None:
+        fields.append("description = ?")
+        params.append(description)
+
+    if status is not None:
+        fields.append("status = ?")
+        params.append(status)
+
+    # Generamos un timestamp nuevo con más precisión (microsegundos)
+    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
+    fields.append("updated_at = ?")
+    params.append(now)
+
+    set_clause = ", ".join(fields)
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"UPDATE tasks SET {set_clause} WHERE id = ?",
+            (*params, task_id),
+        )
+
+        # Volvemos a leer la fila actualizada
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        row = cursor.fetchone()
+
+    if row is None:
+        return None
+
+    return dict(row)
+
 
 
 def delete_task(task_id: int) -> bool:
     """
-    Delete a task by ID
+    Delete a task by ID.
 
     Args:
-        task_id: The task ID to delete
+        task_id: The task ID to delete.
 
     Returns:
-        bool: True if task was deleted, False if not found
-
-    TODO: Implement this function
-    Hints:
-    - Use get_db_connection() from app.backend.core.database
-    - DELETE FROM tasks WHERE id = task_id
-    - Check cursor.rowcount to see if a row was deleted
-    - Return True if deleted, False if task didn't exist
+        bool: True if task was deleted, False if not found.
     """
-    pass
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        # rowcount = number of rows affected
+        return cursor.rowcount > 0

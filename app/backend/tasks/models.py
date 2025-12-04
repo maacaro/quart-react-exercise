@@ -6,6 +6,28 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from backend.core.database import get_db_connection
 
+def init_db() -> None:
+    """Crear la tabla tasks si no existe.
+
+    Esta función se ejecuta una sola vez para inicializar la base de datos SQLite.
+    """
+    # 👇 IMPORTANTE: usar get_db_connection() como context manager
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('pending', 'in_progress', 'completed')),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.commit()
+
 
 def create_task(data: dict) -> dict:
     """

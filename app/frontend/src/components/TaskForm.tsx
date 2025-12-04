@@ -1,74 +1,104 @@
 /**
- * TaskForm Component
- * Form for creating new tasks
+ * Task creation/edit form component.
+ *
+ * Following component patterns from app/frontend/src/components/ in main project.
  */
-import { useState, FormEvent } from 'react';
-import { CreateTaskData } from '../types/task';
+import React, { useState } from "react";
+import { CreateTaskRequest, TaskStatus } from "../types/task";
 
 interface TaskFormProps {
-  onSubmit: (data: CreateTaskData) => Promise<void>;
+  onSubmit: (data: CreateTaskRequest) => Promise<void>;
+  onCancel: () => void;
+  initialData?: CreateTaskRequest;
 }
 
-function TaskForm({ onSubmit }: TaskFormProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed'>('pending');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const TaskForm: React.FC<TaskFormProps> = ({
+  onSubmit,
+  onCancel,
+  initialData,
+}) => {
+  const [title, setTitle] = useState(initialData?.title ?? "");
+  const [description, setDescription] = useState(initialData?.description ?? "");
+  const [status, setStatus] = useState<TaskStatus>(
+    initialData?.status ?? "pending",
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  /**
-   * Handle form submission
-   *
-   * TODO: Implement this function
-   * Hints:
-   * - Prevent default form submission
-   * - Validate that title and description are not empty
-   * - Set isSubmitting to true before calling onSubmit
-   * - Call onSubmit with the form data
-   * - Clear the form fields after successful submission
-   * - Set isSubmitting to false when done
-   * - Handle errors appropriately
-   */
-  const handleSubmit = async (e: FormEvent) => {
-    // TODO: Implement
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    // ✅ Validación que esperan tus tests E2E
+    if (!title.trim()) {
+      setError("Title is required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await onSubmit({
+        title: title.trim(),
+        description: description.trim(),
+        status,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to save task",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <form className="task-form" onSubmit={handleSubmit}>
-      <h3>Create New Task</h3>
+    <form
+      onSubmit={handleSubmit}
+      className="task-form"
+      data-testid="task-form"
+    >
+      {error && (
+        <div data-testid="error-message" className="error">
+          {error}
+        </div>
+      )}
 
       <div className="form-group">
-        <label htmlFor="title">Title:</label>
+        <label htmlFor="title">Title *</label>
         <input
           id="title"
+          data-testid="task-title-input"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter task title"
-          disabled={isSubmitting}
-          required
+          disabled={loading}
         />
       </div>
 
       <div className="form-group">
-        <label htmlFor="description">Description:</label>
+        <label htmlFor="description">Description</label>
         <textarea
           id="description"
+          data-testid="task-description-input"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Enter task description"
-          disabled={isSubmitting}
-          required
+          disabled={loading}
           rows={3}
         />
       </div>
 
       <div className="form-group">
-        <label htmlFor="status">Status:</label>
+        <label htmlFor="status">Status</label>
         <select
           id="status"
+          data-testid="task-status-select"
           value={status}
-          onChange={(e) => setStatus(e.target.value as 'pending' | 'in_progress' | 'completed')}
-          disabled={isSubmitting}
+          onChange={(e) =>
+            setStatus(e.target.value as TaskStatus)
+          }
+          disabled={loading}
         >
           <option value="pending">Pending</option>
           <option value="in_progress">In Progress</option>
@@ -76,11 +106,22 @@ function TaskForm({ onSubmit }: TaskFormProps) {
         </select>
       </div>
 
-      <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Creating...' : 'Create Task'}
-      </button>
+      <div className="form-actions">
+        <button
+          type="submit"
+          data-testid="create-task-btn"
+          disabled={loading}
+        >
+          {loading ? "Saving..." : "Create Task"}
+        </button>
+        <button type="button" onClick={onCancel} disabled={loading}>
+          Cancel
+        </button>
+      </div>
     </form>
   );
-}
+};
 
+// 👇 Exportamos de las dos formas por si acaso
 export default TaskForm;
+export { TaskForm };

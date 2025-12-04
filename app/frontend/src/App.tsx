@@ -10,6 +10,7 @@ function App() {
       <main className="app-main">
         <Routes>
           <Route path="/" element={<TasksPage />} />
+          <Route path="/tasks" element={<TasksPage />} />
         </Routes>
       </main>
     </div>

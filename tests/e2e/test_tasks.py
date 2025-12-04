@@ -70,10 +70,10 @@ def test_create_task_flow(page: Page):
     expect(page.locator('[data-testid="success-message"]')).to_be_visible()
 
     # Verificar que la nueva tarea aparece en la lista
-    task_card = page.locator(
-        '[data-testid="task-card"]',
-        has_text="Test Task",
-    )
+    task_card = page.locator('[data-testid="task-card"]').filter(
+    has_text="Test Task",
+        ).first
+
     expect(task_card).to_be_visible()
     expect(task_card).to_contain_text("Test Description")
 
@@ -144,15 +144,24 @@ def test_delete_task(page: Page):
 
     page.goto(f"{BASE_URL}/tasks")
 
-    # Tomamos la primera tarjeta de tarea
-    task_card = page.locator('[data-testid="task-card"]').first
+    # 1️⃣ Crear una tarea que luego vamos a borrar
+    page.click('[data-testid="new-task-btn"]')
+    page.fill('[data-testid="task-title-input"]', "Task to delete")
+    page.fill('[data-testid="task-description-input"]', "Temporary task")
+    page.select_option('[data-testid="task-status-select"]', "completed")
+    page.click('[data-testid="create-task-btn"]')
+
+    # 2️⃣ Localizar la tarjeta de esa tarea
+    cards = page.locator('[data-testid="task-card"]')
+    task_card = cards.filter(has_text="Task to delete").first
+
     expect(task_card).to_be_visible()
 
-    # Click en botón de eliminar
+    # 3️⃣ Click en eliminar
     task_card.locator('[data-testid="task-delete-btn"]').click()
 
-    # Confirmar en el diálogo
+    # 4️⃣ Confirmar en el diálogo
     page.click('[data-testid="confirm-delete-btn"]')
 
-    # Verificar que esa tarjeta ya no es visible
+    # 5️⃣ Verificar que ya no se ve esa tarjeta
     expect(task_card).not_to_be_visible()

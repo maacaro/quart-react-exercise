@@ -2,6 +2,7 @@
 Task Routes
 API endpoints for task management
 """
+
 from quart import Blueprint, request, jsonify
 from backend.tasks import models
 
@@ -31,9 +32,7 @@ async def create_task():
 
     if not description or not str(description).strip():
         return (
-            jsonify(
-                {"error": "Description is required", "field": "description"}
-            ),
+            jsonify({"error": "Description is required", "field": "description"}),
             400,
         )
 
@@ -41,10 +40,7 @@ async def create_task():
         return (
             jsonify(
                 {
-                    "error": (
-                        "Invalid status. Must be one of: "
-                        + ", ".join(VALID_STATUSES)
-                    ),
+                    "error": ("Invalid status. Must be one of: " + ", ".join(VALID_STATUSES)),
                     "field": "status",
                 }
             ),
@@ -113,10 +109,7 @@ async def update_task(task_id: int):
         return (
             jsonify(
                 {
-                    "error": (
-                        "Invalid status. Must be one of: "
-                        + ", ".join(VALID_STATUSES)
-                    ),
+                    "error": ("Invalid status. Must be one of: " + ", ".join(VALID_STATUSES)),
                     "field": "status",
                 }
             ),

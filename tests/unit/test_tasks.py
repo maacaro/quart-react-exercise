@@ -1,23 +1,26 @@
 """
-Unit tests for task API endpoints
+Unit tests for task API endpoints.
 
-Follow the TDD (Test-Driven Development) approach:
-1. RED: Write a failing test
-2. GREEN: Write minimal code to make it pass
-3. REFACTOR: Improve the code while keeping tests passing
+Seguimos el enfoque TDD:
+1. RED: escribir un test que falle
+2. GREEN: escribir el mínimo código para que pase
+3. REFACTOR: mejorar manteniendo los tests en verde
 
-Run tests with: pytest tests/unit/test_tasks.py -v
+Se ejecutan con:
+    pytest tests/unit/test_tasks.py -m unit -v
 """
+
 import pytest
 
 
 class TestTaskCreation:
-    """Tests for creating tasks"""
+    """Tests para la creación de tareas (POST /api/tasks)."""
 
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_create_task_success(self, client):
         """
-        Test successful task creation with valid data.
+        Creación exitosa con datos válidos.
         """
         # Arrange
         task_data = {
@@ -50,16 +53,11 @@ class TestTaskCreation:
         assert data["created_at"]
         assert data["updated_at"]
 
-
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_create_task_missing_title(self, client):
         """
-        Test task creation fails when title is missing.
-
-        Steps:
-        1. Make POST request to /api/tasks without 'title' in JSON body
-        2. Assert response status code is 400
-        3. Assert response JSON contains error message about missing title
+        Debe fallar si falta el título.
         """
         # Arrange: falta title
         task_data = {
@@ -74,75 +72,93 @@ class TestTaskCreation:
         assert response.status_code == 400
         data = await response.get_json()
         assert "error" in data
-        # mensaje menciona title
         assert "title" in data["error"].lower()
-        # opcional: campo específico
         assert data.get("field") == "title"
 
-
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_create_task_invalid_status(self, client):
         """
-        Test that task creation fails when status is invalid.
-
-        Valid statuses: pending, in_progress, completed
+        Debe fallar si el status es inválido.
+        Status válidos: pending, in_progress, completed.
         """
-        # Arrange: status inválido
         task_data = {
             "title": "Task with invalid status",
             "description": "Some description",
             "status": "invalid_status",
         }
 
-        # Act
         response = await client.post("/api/tasks", json=task_data)
 
-        # Assert
         assert response.status_code == 400
         data = await response.get_json()
         assert "error" in data
         assert "status" in data["error"].lower()
         assert data.get("field") == "status"
-    
-
 
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_create_task_missing_description(self, client):
         """
-        Test that task creation fails when description is missing.
-
-        In this exercise, we require both title and description.
+        Debe fallar si falta la descripción.
+        (En este ejercicio requerimos título y descripción.)
         """
-        # Arrange: falta description
         task_data = {
             "title": "Task without description",
             "status": "pending",
         }
 
-        # Act
         response = await client.post("/api/tasks", json=task_data)
 
-        # Assert
         assert response.status_code == 400
         data = await response.get_json()
         assert "error" in data
         assert "description" in data["error"].lower()
         assert data.get("field") == "description"
 
-
-
-
-
-
-
-
-
-import pytest
-
-class TestTaskReadUpdateDelete:
     @pytest.mark.asyncio
-    async def test_get_all_tasks_returns_created_tasks(self, client):
-        """GET /api/tasks debe devolver las tareas creadas."""
+    @pytest.mark.unit
+    async def test_create_task_default_status(self, client):
+        """
+        Si no se envía 'status', debe quedar en 'pending' por defecto.
+        """
+        task_data = {
+            "title": "Task without explicit status",
+            "description": "Some description",
+            # sin campo "status"
+        }
+
+        response = await client.post("/api/tasks", json=task_data)
+
+        assert response.status_code == 201
+        data = await response.get_json()
+        assert data["title"] == task_data["title"]
+        assert data["description"] == task_data["description"]
+        assert data["status"] == "pending"
+
+
+class TestTaskRetrieval:
+    """Tests for retrieving tasks (GET /api/tasks, GET /api/tasks/{id})."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_get_all_tasks_empty(self, client):
+        """
+        Cuando la BD está vacía, debe devolver lista vacía.
+        """
+        response = await client.get("/api/tasks")
+
+        assert response.status_code == 200
+        data = await response.get_json()
+        assert isinstance(data, list)
+        assert data == []
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_get_all_tasks_with_data(self, client):
+        """
+        Obtener todas las tareas cuando existen registros.
+        """
         # Arrange: crear 2 tareas
         task_1 = {
             "title": "Task 1",
@@ -168,15 +184,17 @@ class TestTaskReadUpdateDelete:
         data = await resp.get_json()
         assert isinstance(data, list)
 
-        # No asumimos que SOLO haya estas 2, pero sí que estén
         titles = {t["title"] for t in data}
         assert "Task 1" in titles
         assert "Task 2" in titles
 
     @pytest.mark.asyncio
-    async def test_get_task_by_id_returns_task(self, client):
-        """GET /api/tasks/<id> debe devolver la tarea correcta."""
-        # Arrange: crear una tarea
+    @pytest.mark.unit
+    async def test_get_task_by_id_success(self, client):
+        """
+        Obtener una tarea específica por ID.
+        """
+        # Arrange
         task = {
             "title": "Single Task",
             "description": "Some description",
@@ -200,18 +218,28 @@ class TestTaskReadUpdateDelete:
         assert data["status"] == task["status"]
 
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_get_task_by_id_not_found(self, client):
-        """GET /api/tasks/<id> debe devolver 404 si no existe."""
+        """
+        Debe devolver 404 si la tarea no existe.
+        """
         resp = await client.get("/api/tasks/999999")
         assert resp.status_code == 404
         data = await resp.get_json()
         assert "error" in data
         assert "not found" in data["error"].lower()
 
+
+class TestTaskUpdate:
+    """Tests for updating tasks (PUT /api/tasks/{id})."""
+
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_update_task_success(self, client):
-        """PUT /api/tasks/<id> debe actualizar la tarea."""
-        # Arrange: crear una tarea
+        """
+        Actualizar todos los campos de una tarea con datos válidos.
+        """
+        # Arrange: crear tarea
         task = {
             "title": "Old title",
             "description": "Old description",
@@ -229,9 +257,7 @@ class TestTaskReadUpdateDelete:
             "description": "New description",
             "status": "completed",
         }
-        resp_update = await client.put(
-            f"/api/tasks/{task_id}", json=update_data
-        )
+        resp_update = await client.put(f"/api/tasks/{task_id}", json=update_data)
 
         # Assert
         assert resp_update.status_code == 200
@@ -243,8 +269,56 @@ class TestTaskReadUpdateDelete:
         assert updated["updated_at"] != original_updated_at
 
     @pytest.mark.asyncio
-    async def test_update_task_invalid_status_returns_400(self, client):
-        """PUT /api/tasks/<id> debe validar el status."""
+    @pytest.mark.unit
+    async def test_update_task_partial(self, client):
+        """
+        Actualizar solo algunos campos (ej: solo el status).
+        """
+        task = {
+            "title": "Keep this title",
+            "description": "Keep this description",
+            "status": "pending",
+        }
+        resp_create = await client.post("/api/tasks", json=task)
+        assert resp_create.status_code == 201
+        created = await resp_create.get_json()
+        task_id = created["id"]
+
+        # Act: solo cambiamos el status
+        resp_update = await client.put(
+            f"/api/tasks/{task_id}", json={"status": "in_progress"}
+        )
+
+        assert resp_update.status_code == 200
+        updated = await resp_update.get_json()
+        assert updated["id"] == task_id
+        assert updated["status"] == "in_progress"
+        # título y descripción deben mantenerse
+        assert updated["title"] == task["title"]
+        assert updated["description"] == task["description"]
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_update_task_not_found(self, client):
+        """
+        Debe devolver 404 si se intenta actualizar una tarea inexistente.
+        """
+        resp_update = await client.put(
+            "/api/tasks/999999",
+            json={"title": "Does not matter"},
+        )
+
+        assert resp_update.status_code == 404
+        data = await resp_update.get_json()
+        assert "error" in data
+        assert "not found" in data["error"].lower()
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_update_task_invalid_status(self, client):
+        """
+        Debe devolver 400 si el status enviado es inválido.
+        """
         # Arrange: crear tarea válida
         task = {
             "title": "Task with bad update",
@@ -269,22 +343,16 @@ class TestTaskReadUpdateDelete:
         assert "invalid status" in data["error"].lower()
         assert data.get("field") == "status"
 
-    @pytest.mark.asyncio
-    async def test_update_task_not_found_returns_404(self, client):
-        """PUT /api/tasks/<id> debe devolver 404 si no existe la tarea."""
-        resp_update = await client.put(
-            "/api/tasks/999999",
-            json={"title": "Does not matter"},
-        )
 
-        assert resp_update.status_code == 404
-        data = await resp_update.get_json()
-        assert "error" in data
-        assert "not found" in data["error"].lower()
+class TestTaskDeletion:
+    """Tests for deleting tasks (DELETE /api/tasks/{id})."""
 
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_delete_task_success(self, client):
-        """DELETE /api/tasks/<id> debe borrar la tarea."""
+        """
+        Eliminar una tarea existente.
+        """
         # Arrange: crear tarea
         task = {
             "title": "To be deleted",
@@ -302,13 +370,16 @@ class TestTaskReadUpdateDelete:
         # Assert
         assert resp_delete.status_code == 204
 
-        # Y comprobar que ya no existe
+        # Verificar que ya no existe
         resp_get = await client.get(f"/api/tasks/{task_id}")
         assert resp_get.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_delete_task_not_found_returns_404(self, client):
-        """DELETE /api/tasks/<id> debe devolver 404 si no existe."""
+    @pytest.mark.unit
+    async def test_delete_task_not_found(self, client):
+        """
+        Debe devolver 404 al intentar borrar una tarea inexistente.
+        """
         resp_delete = await client.delete("/api/tasks/999999")
         assert resp_delete.status_code == 404
         data = await resp_delete.get_json()
@@ -316,171 +387,48 @@ class TestTaskReadUpdateDelete:
         assert "not found" in data["error"].lower()
 
 
-
-
-
-
-
-
-class TestTaskRetrieval:
-    """Tests for retrieving tasks"""
-
-    @pytest.mark.asyncio
-    async def test_get_all_tasks_empty(self, client):
-        """
-        Test getting all tasks when database is empty
-
-        TODO: Implement this test
-        Steps:
-        1. Make GET request to /api/tasks
-        2. Assert response status is 200
-        3. Assert response is an empty list
-        """
-        pass
-
-    @pytest.mark.asyncio
-    async def test_get_all_tasks_with_data(self, client):
-        """
-        Test getting all tasks when tasks exist
-
-        TODO: Implement this test
-        Steps:
-        1. Create 2-3 tasks using POST /api/tasks
-        2. Make GET request to /api/tasks
-        3. Assert response status is 200
-        4. Assert response contains all created tasks
-        """
-        pass
-
-    @pytest.mark.asyncio
-    async def test_get_task_by_id_success(self, client):
-        """
-        Test getting a specific task by ID
-
-        TODO: Implement this test
-        Steps:
-        1. Create a task
-        2. Make GET request to /api/tasks/{id}
-        3. Assert response status is 200
-        4. Assert response contains correct task data
-        """
-        pass
-
-    @pytest.mark.asyncio
-    async def test_get_task_by_id_not_found(self, client):
-        """
-        Test getting a task that doesn't exist returns 404
-
-        TODO: Implement this test
-        """
-        pass
-
-
-
-
-
-
-
-class TestTaskUpdate:
-    """Tests for updating tasks"""
-
-    @pytest.mark.asyncio
-    async def test_update_task_success(self, client):
-        """
-        Test updating a task with valid data
-
-        TODO: Implement this test
-        Steps:
-        1. Create a task
-        2. Make PUT request to /api/tasks/{id} with updated data
-        3. Assert response status is 200
-        4. Assert response contains updated data
-        5. Verify updated_at timestamp changed
-        """
-        pass
-
-    @pytest.mark.asyncio
-    async def test_update_task_partial(self, client):
-        """
-        Test updating only some fields of a task
-
-        TODO: Implement this test
-        Hint: Update only status, verify title and description unchanged
-        """
-        pass
-
-    @pytest.mark.asyncio
-    async def test_update_task_not_found(self, client):
-        """
-        Test updating a task that doesn't exist returns 404
-
-        TODO: Implement this test
-        """
-        pass
-
-    @pytest.mark.asyncio
-    async def test_update_task_invalid_status(self, client):
-        """
-        Test updating a task with invalid status returns 400
-
-        TODO: Implement this test
-        """
-        pass
-
-
-
-
-
-
-
-class TestTaskDeletion:
-    """Tests for deleting tasks"""
-
-    @pytest.mark.asyncio
-    async def test_delete_task_success(self, client):
-        """
-        Test deleting an existing task
-
-        TODO: Implement this test
-        Steps:
-        1. Create a task
-        2. Make DELETE request to /api/tasks/{id}
-        3. Assert response status is 204
-        4. Verify task no longer exists (GET returns 404)
-        """
-        pass
-
-    @pytest.mark.asyncio
-    async def test_delete_task_not_found(self, client):
-        """
-        Test deleting a task that doesn't exist returns 404
-
-        TODO: Implement this test
-        """
-        pass
-
-
-
-
-
-
-
 # BONUS: Integration tests
 class TestTaskWorkflow:
-    """Integration tests for complete task workflows"""
+    """Integration tests for complete task workflows."""
 
     @pytest.mark.asyncio
     async def test_complete_task_lifecycle(self, client):
         """
-        Test the complete lifecycle of a task
-
-        TODO: Implement this integration test
-        Steps:
-        1. Create a task with status 'pending'
-        2. Update status to 'in_progress'
-        3. Update status to 'completed'
-        4. Verify task history at each step
-        5. Delete the task
-        6. Verify it's gone
+        Ciclo de vida completo:
+        crear -> in_progress -> completed -> borrar.
+        (Test de integración, sin marcar como 'unit'.)
         """
-        pass
+        # 1. Crear tarea en pending
+        task_data = {
+            "title": "Lifecycle task",
+            "description": "Testing full lifecycle",
+            "status": "pending",
+        }
+        resp_create = await client.post("/api/tasks", json=task_data)
+        assert resp_create.status_code == 201
+        created = await resp_create.get_json()
+        task_id = created["id"]
+
+        # 2. Cambiar a in_progress
+        resp_update_1 = await client.put(
+            f"/api/tasks/{task_id}", json={"status": "in_progress"}
+        )
+        assert resp_update_1.status_code == 200
+        data_1 = await resp_update_1.get_json()
+        assert data_1["status"] == "in_progress"
+
+        # 3. Cambiar a completed
+        resp_update_2 = await client.put(
+            f"/api/tasks/{task_id}", json={"status": "completed"}
+        )
+        assert resp_update_2.status_code == 200
+        data_2 = await resp_update_2.get_json()
+        assert data_2["status"] == "completed"
+
+        # 4. Borrar la tarea
+        resp_delete = await client.delete(f"/api/tasks/{task_id}")
+        assert resp_delete.status_code == 204
+
+        # 5. Verificar que ya no existe
+        resp_get = await client.get(f"/api/tasks/{task_id}")
+        assert resp_get.status_code == 404

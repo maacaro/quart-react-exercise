@@ -25,6 +25,7 @@ def create_app() -> Quart:
 
     # Registrar blueprint de tasks
     from .tasks.routes import tasks_bp
+
     # Todas las rutas del blueprint irán bajo /api
     app.register_blueprint(tasks_bp, url_prefix="/api")
 

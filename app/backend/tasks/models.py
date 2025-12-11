@@ -2,9 +2,11 @@
 Task Models
 Database operations for tasks
 """
+
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from backend.core.database import get_db_connection
+
 
 def init_db() -> None:
     """Crear la tabla tasks si no existe.
@@ -158,7 +160,6 @@ def update_task(
         return None
 
     return dict(row)
-
 
 
 def delete_task(task_id: int) -> bool:

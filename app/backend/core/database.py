@@ -2,6 +2,7 @@
 Database utilities
 Simple SQLite database helpers for the practice exercise
 """
+
 import sqlite3
 import os
 from contextlib import contextmanager

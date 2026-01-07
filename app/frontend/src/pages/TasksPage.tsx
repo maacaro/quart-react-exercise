@@ -7,19 +7,11 @@
 
 import React, { useEffect, useState } from "react";
 
-import {
-  Task,
-  TaskStatus,
-  CreateTaskRequest,
-} from "../types/task";
+import { Task, TaskStatus, CreateTaskRequest } from "../types/task";
 
-import {
-  getTasks,
-  createTask,
-  updateTask,
-  deleteTask,
-} from "../api/tasks";
+import { getTasks, createTask, updateTask, deleteTask } from "../api/tasks";
 import { TaskForm } from "../components/TaskForm";
+import TaskList from "../components/TaskList"; // ✅ usamos el componente
 
 const TasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -45,9 +37,7 @@ const TasksPage: React.FC = () => {
       setTasks(data);
     } catch (err) {
       console.error("Failed to load tasks:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to load tasks",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load tasks");
     } finally {
       setLoading(false);
     }
@@ -58,9 +48,7 @@ const TasksPage: React.FC = () => {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  const handleCreateTask = async (
-    data: CreateTaskRequest,
-  ): Promise<void> => {
+  const handleCreateTask = async (data: CreateTaskRequest): Promise<void> => {
     const newTask = await createTask(data);
     // Lo ponemos al principio de la lista
     setTasks((prev) => [newTask, ...prev]);
@@ -69,15 +57,15 @@ const TasksPage: React.FC = () => {
   };
 
   // Cambiar el estado en memoria cuando el usuario cambia el select
+  // (Esto lo dejamos porque puede ayudar a que la UI responda inmediato)
   const handleStatusChange = (id: number, status: TaskStatus) => {
     setTasks((prev) =>
-      prev.map((task) =>
-        task.id === id ? { ...task, status } : task,
-      ),
+      prev.map((task) => (task.id === id ? { ...task, status } : task)),
     );
   };
 
   // Guardar cambios de una tarea (incluido el estado) en el backend
+  // ✅ Se mantiene porque tus E2E ya usan task-save-btn
   const handleSaveTask = async (task: Task) => {
     const updated = await updateTask(task.id, {
       title: task.title,
@@ -85,9 +73,7 @@ const TasksPage: React.FC = () => {
       status: task.status,
     });
 
-    setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? updated : t)),
-    );
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     showSuccess("Task updated successfully!");
   };
 
@@ -97,16 +83,35 @@ const TasksPage: React.FC = () => {
     showSuccess("Task deleted successfully!");
   };
 
+  // ✅ Esto es lo que TaskList va a usar para actualizar status en backend
+  const handleUpdateFromList = async (id: number, data: Partial<Task>) => {
+    // Si solo viene status, hacemos update del status.
+    // Mantenemos también la actualización “optimista” en memoria.
+    if (data.status) {
+      handleStatusChange(id, data.status as TaskStatus);
+    }
+
+    // Nota: tu backend probablemente espera PUT /api/tasks/:id con status
+    const current = tasks.find((t) => t.id === id);
+    if (!current) return;
+
+    const updated = await updateTask(id, {
+      title: current.title,
+      description: current.description,
+      status: (data.status ?? current.status) as TaskStatus,
+    });
+
+    setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    showSuccess("Task updated successfully!");
+  };
+
   return (
     <div className="tasks-page">
       {/* 👇 Tus tests hacen get_by_role("heading", name="Tasks") */}
       <h1>Tasks</h1>
 
       {successMessage && (
-        <div
-          data-testid="success-message"
-          className="success"
-        >
+        <div data-testid="success-message" className="success">
           {successMessage}
         </div>
       )}
@@ -123,67 +128,25 @@ const TasksPage: React.FC = () => {
       </button>
 
       {showForm && (
-        <TaskForm
-          onSubmit={handleCreateTask}
-          onCancel={() => setShowForm(false)}
-        />
+        <TaskForm onSubmit={handleCreateTask} onCancel={() => setShowForm(false)} />
       )}
 
       {loading ? (
         <div>Loading tasks...</div>
       ) : (
         <div data-testid="task-list">
-          {tasks.length === 0 ? (
-            <p>No tasks yet. Create one to get started!</p>
-          ) : (
-            tasks.map((task) => (
-              <div
-                key={task.id}
-                data-testid="task-card"
-                className="task-card"
-              >
-                <h3>{task.title}</h3>
-                {task.description && <p>{task.description}</p>}
-
-                <div className="task-meta">
-                  <label>
-                    Status:{" "}
-                    <select
-                      data-testid="task-status-select"
-                      value={task.status}
-                      onChange={(e) =>
-                        handleStatusChange(
-                          task.id,
-                          e.target.value as TaskStatus,
-                        )
-                      }
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div className="task-actions">
-                  <button
-                    type="button"
-                    data-testid="task-save-btn"
-                    onClick={() => handleSaveTask(task)}
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="task-delete-btn"
-                    onClick={() => setPendingDeleteId(task.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+          {/* ✅ Ahora TaskList renderiza la lista, pero NO rompemos el flujo de confirm */}
+          <TaskList
+            tasks={tasks}
+            onUpdate={handleUpdateFromList}
+            onDelete={async (id) => {
+              // IMPORTANTE: aquí NO borramos directo
+              // para que siga existiendo el confirm-delete-btn que esperan los tests.
+              setPendingDeleteId(id);
+            }}
+            // ✅ extra prop para mantener Save
+            onSave={handleSaveTask}
+          />
         </div>
       )}
 
@@ -201,10 +164,7 @@ const TasksPage: React.FC = () => {
           >
             Confirm
           </button>
-          <button
-            type="button"
-            onClick={() => setPendingDeleteId(null)}
-          >
+          <button type="button" onClick={() => setPendingDeleteId(null)}>
             Cancel
           </button>
         </div>

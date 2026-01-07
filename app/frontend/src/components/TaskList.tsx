@@ -2,6 +2,25 @@
  * TaskList Component
  * Displays a list of tasks with actions
  */
+
+/**
+   * TODO: Implement this component
+   *
+   * Requirements:
+   * - Display all tasks in a list
+   * - Show task title, description, and status for each task
+   * - Provide a button or dropdown to change task status
+   * - Provide a delete button for each task
+   * - Handle empty state (no tasks)
+   *
+   * Hints:
+   * - Map over the tasks array to render each task
+   * - Use the onUpdate callback when status changes
+   * - Use the onDelete callback when delete button is clicked
+   * - Consider using a select dropdown for status changes
+   * - Add loading/disabled states during async operations
+   */
+
 import { useMemo, useState } from "react";
 import { Task, TaskStatus } from "../types/task";
 
@@ -9,6 +28,7 @@ interface TaskListProps {
   tasks: Task[];
   onUpdate: (id: number, data: Partial<Task>) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  onSave?: (task: Task) => Promise<void>; // ✅ NUEVO opcional
 }
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
@@ -17,21 +37,23 @@ const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "completed", label: "Completed" },
 ];
 
-function TaskList({ tasks, onUpdate, onDelete }: TaskListProps) {
+function TaskList({ tasks, onUpdate, onDelete, onSave }: TaskListProps) {
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [savingIds, setSavingIds] = useState<Set<number>>(new Set());
   const [errorById, setErrorById] = useState<Record<number, string | null>>({});
 
   const isBusy = useMemo(() => {
-    return (id: number) => updatingIds.has(id) || deletingIds.has(id);
-  }, [updatingIds, deletingIds]);
+    return (id: number) =>
+      updatingIds.has(id) || deletingIds.has(id) || savingIds.has(id);
+  }, [updatingIds, deletingIds, savingIds]);
 
   const handleStatusChange = async (task: Task, newStatus: TaskStatus) => {
     setErrorById((prev) => ({ ...prev, [task.id]: null }));
     setUpdatingIds((prev) => new Set(prev).add(task.id));
 
     try {
-      // Solo actualizamos status (lo que pide el TODO del componente)
+      // Usamos el callback cuando cambia el status
       await onUpdate(task.id, { status: newStatus });
     } catch (err) {
       setErrorById((prev) => ({
@@ -67,6 +89,28 @@ function TaskList({ tasks, onUpdate, onDelete }: TaskListProps) {
     }
   };
 
+  const handleSave = async (task: Task) => {
+    if (!onSave) return;
+
+    setErrorById((prev) => ({ ...prev, [task.id]: null }));
+    setSavingIds((prev) => new Set(prev).add(task.id));
+
+    try {
+      await onSave(task);
+    } catch (err) {
+      setErrorById((prev) => ({
+        ...prev,
+        [task.id]: err instanceof Error ? err.message : "Failed to save task",
+      }));
+    } finally {
+      setSavingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(task.id);
+        return next;
+      });
+    }
+  };
+
   if (tasks.length === 0) {
     return (
       <div className="task-list-empty" data-testid="task-list-empty">
@@ -76,7 +120,9 @@ function TaskList({ tasks, onUpdate, onDelete }: TaskListProps) {
   }
 
   return (
-    <div className="task-list" data-testid="task-list">
+    // ❗ IMPORTANTE: NO usar data-testid="task-list" aquí
+    // porque TasksPage ya lo tiene y rompe strict mode
+    <div className="task-list" data-testid="task-list-inner">
       {tasks.map((task) => (
         <div key={task.id} className="task-card" data-testid="task-card">
           <div className="task-card-header">
@@ -120,13 +166,24 @@ function TaskList({ tasks, onUpdate, onDelete }: TaskListProps) {
           ) : null}
 
           <div className="task-actions">
+            {onSave && (
+              <button
+                type="button"
+                data-testid="task-save-btn"
+                disabled={isBusy(task.id)}
+                onClick={() => handleSave(task)}
+              >
+                {savingIds.has(task.id) ? "Saving..." : "Save"}
+              </button>
+            )}
+
             <button
               type="button"
               data-testid="task-delete-btn"
               disabled={isBusy(task.id)}
               onClick={() => handleDelete(task.id)}
             >
-              {deletingIds.has(task.id) ? "Deleting..." : "Delete"}
+              Delete
             </button>
           </div>
         </div>

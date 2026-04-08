@@ -1,0 +1,30 @@
+@"
+# --- Node / Frontend ---
+node_modules/
+**/node_modules/
+dist/
+build/
+.vite/
+playwright-report/
+test-results/
+*.log
+
+# --- Python ---
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# --- DB / local artifacts ---
+*.db
+*.sqlite3
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+"@ | Set-Content -Encoding utf8 .gitignore

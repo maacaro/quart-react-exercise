@@ -1,1 +1,0 @@
-# quart-react-exercise

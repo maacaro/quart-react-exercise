@@ -1,0 +1,13 @@
+# Practice Exercise - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Web Framework
+quart==0.19.4
+quart-cors==0.7.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Development Tools
+python-dotenv==1.0.0
